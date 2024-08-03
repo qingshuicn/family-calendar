@@ -1,37 +1,51 @@
 .family-tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  
-  .family-tabs button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 20px;
-    background-color: #f0f0f0;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .family-tabs button.active {
-    background-color: #4a0e4e;
-    color: white;
-  }
-  
-  .family-tabs button:hover {
-    background-color: #e0e0e0;
-  }
-  
-  .family-tabs button.active:hover {
-    background-color: #3a0b3e;
-  }
-  
-  .add-event-btn {
-    margin-left: auto;
-    background-color: #4a0e4e !important;
-    color: white !important;
-  }
-  
-  .add-event-btn:hover {
-    background-color: #3a0b3e !important;
-  }
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.family-tabs button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 20px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: #333;
+  font-weight: 500;
+}
+
+.family-tabs button.active {
+  background-color: #4a0e4e;
+  color: white;
+}
+
+.family-tabs button:hover {
+  background-color: #e0e0e0;
+}
+
+.family-tabs button.active:hover {
+  background-color: #3a0b3e;
+}
+
+.add-event-btn {
+  margin-left: auto;
+  background-color: #4a0e4e !important;
+  color: white !important;
+}
+
+.add-event-btn:hover {
+  background-color: #3a0b3e !important;
+}
+
+/* 新增样式以确保未选中的标签也清晰可见 */
+.family-tabs .member-tab {
+  color: #333;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.family-tabs .member-tab:not(.active):hover {
+  background-color: #e0e0e0;
+  color: #4a0e4e;
+}

@@ -1,15 +1,24 @@
 <template>
-    <div class="home-view">
+  <div class="home-view">
+    <div class="header">
       <h1>家庭日程</h1>
-      <div class="layout">
-        <CalendarSidebar />
-        <div class="main-content">
-          <FamilyTabs />
-          <ScheduleView />
-        </div>
+      <CurrentDateTime />
+    </div>
+    <div class="layout">
+      <CalendarSidebar />
+      <div class="main-content">
+        <FamilyTabs />
+        <ScheduleView />
       </div>
     </div>
-  </template>
-  
-  <script src="./HomeView.js"></script>
-  <style src="./HomeView.css" scoped></style>
+  </div>
+</template>
+
+<script setup>
+import CalendarSidebar from '@/components/CalendarSidebar.vue'
+import FamilyTabs from '@/components/FamilyTabs.vue'
+import ScheduleView from '@/components/ScheduleView.vue'
+import CurrentDateTime from '@/components/CurrentDateTime.vue'
+</script>
+
+<style src="./HomeView.css" scoped></style>

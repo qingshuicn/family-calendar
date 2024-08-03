@@ -8,4 +8,19 @@ axios.defaults.baseURL = 'http://localhost:3000'  // 假设后端运行在 3000 
 
 const app = createApp(App)
 app.use(router)
+
+// 保持屏幕常亮
+const keepAwake = () => {
+  if ('wakeLock' in navigator) {
+    navigator.wakeLock.request('screen').then(() => {
+      console.log('Screen will stay awake')
+    }).catch((err) => {
+      console.error(`${err.name}, ${err.message}`)
+    })
+  } else {
+    console.warn('Wake Lock API not supported')
+  }
+}
+
 app.mount('#app')
+keepAwake()
