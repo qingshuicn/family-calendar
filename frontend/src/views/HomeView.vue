@@ -24,6 +24,7 @@ import CurrentDateTime from '@/components/CurrentDateTime.vue';
 
 const events = ref([]);
 let ws;
+let isPolling = false;
 
 const connectWebSocket = () => {
   const wsUrl = process.env.VUE_APP_WS_URL || 'ws://localhost:3000';
@@ -32,6 +33,7 @@ const connectWebSocket = () => {
 
   ws.onopen = () => {
     console.log('WebSocket 连接已建立');
+    isPolling = false; // 重置轮询标志
   };
 
   ws.onmessage = (event) => {
@@ -50,26 +52,42 @@ const connectWebSocket = () => {
 
   ws.onerror = (error) => {
     console.error('WebSocket 错误:', error);
-    // 在这里可以添加回退到轮询的逻辑
-    pollForEvents();
+    console.log('WebSocket 读取状态:', ws.readyState);
+    console.log('WebSocket URL:', ws.url);
+    if (!isPolling) {
+      console.log('切换到轮询模式');
+      pollForEvents();
+    }
   };
 
-  ws.onclose = () => {
-    console.log('WebSocket 连接关闭，5秒后尝试重新连接...');
-    setTimeout(connectWebSocket, 5000);
+  ws.onclose = (event) => {
+    console.log(`WebSocket 连接关闭。代码: ${event.code}, 原因: ${event.reason}`);
+    if (!isPolling) {
+      console.log('5秒后尝试重新连接...');
+      setTimeout(connectWebSocket, 5000);
+    }
   };
 };
 
 const pollForEvents = async () => {
-  try {
-    const response = await axios.get('/api/events');
-    events.value = response.data;
-    console.log('通过轮询获取到事件:', events.value);
-    setTimeout(pollForEvents, 5000); // 每5秒轮询一次
-  } catch (error) {
-    console.error('轮询错误:', error);
-    setTimeout(pollForEvents, 5000); // 出错时也继续轮询
-  }
+  if (isPolling) return;
+  isPolling = true;
+
+  const poll = async () => {
+    try {
+      const response = await axios.get('/api/events');
+      events.value = response.data;
+      console.log('通过轮询获取到事件:', events.value);
+    } catch (error) {
+      console.error('轮询错误:', error);
+    }
+
+    if (isPolling) {
+      setTimeout(poll, 5000); // 每5秒轮询一次
+    }
+  };
+
+  poll();
 };
 
 onMounted(() => {
@@ -80,6 +98,7 @@ onUnmounted(() => {
   if (ws) {
     ws.close();
   }
+  isPolling = false; // 确保在组件卸载时停止轮询
 });
 </script>
 
