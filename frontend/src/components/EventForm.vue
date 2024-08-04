@@ -26,7 +26,8 @@ export default {
   },
   methods: {
     connectWebSocket() {
-      this.ws = new WebSocket('ws://localhost:3000')
+      const wsUrl = process.env.VUE_APP_WS_URL || 'ws://localhost:3000';
+      this.ws = new WebSocket(wsUrl)
       
       this.ws.onopen = () => {
         console.log('WebSocket connected')

@@ -25,7 +25,8 @@ const events = ref([]);
 let ws;
 
 const connectWebSocket = () => {
-  ws = new WebSocket('ws://localhost:3000');
+  const wsUrl = process.env.VUE_APP_WS_URL || 'ws://localhost:3000';
+  ws = new WebSocket(wsUrl);
 
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);

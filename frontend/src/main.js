@@ -4,7 +4,7 @@ import router from './router'
 import axios from 'axios'
 
 // 配置 axios 默认 URL
-axios.defaults.baseURL = 'http://localhost:3000'  // 假设后端运行在 3000 端口
+axios.defaults.baseURL = process.env.VUE_APP_API_URL || 'http://localhost:3000'
 
 const app = createApp(App)
 app.use(router)
