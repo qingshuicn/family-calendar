@@ -21,14 +21,15 @@ wss.on('error', (error) => {
 });
 
 // WebSocket connection handler
-wss.on('connection', (ws) => {
-  console.log('新的 WebSocket 连接');
+wss.on('connection', (ws, req) => {
+  console.log(`新的 WebSocket 连接，来自: ${req.socket.remoteAddress}`);
+  console.log('请求头:', req.headers);
 
   // 发送现有事件到新连接的客户端
   ws.send(JSON.stringify({ type: 'initial', events: events }));
 
   ws.on('message', (message) => {
-    console.log('收到消息:', message);
+    console.log('收到消息:', message.toString());
     try {
       const data = JSON.parse(message);
       if (data.type === 'newEvent') {
@@ -45,11 +46,11 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('error', (error) => {
-    console.error('WebSocket connection error:', error);
+    console.error('WebSocket 连接错误:', error);
   });
 
-  ws.on('close', () => {
-    console.log('WebSocket 连接关闭');
+  ws.on('close', (code, reason) => {
+    console.log(`WebSocket 连接关闭，代码: ${code}, 原因: ${reason}`);
   });
 });
 
@@ -107,4 +108,5 @@ app.get('/api/events', (req, res) => {
 
 server.listen(port, () => {
   console.log(`服务器运行在 http://localhost:${port}`);
+  console.log(`WebSocket 服务器准备就绪`);
 });
