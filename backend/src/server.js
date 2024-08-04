@@ -15,6 +15,11 @@ app.use(bodyParser.json());
 
 let events = [];
 
+// WebSocket 错误处理
+wss.on('error', (error) => {
+  console.error('WebSocket server error:', error);
+});
+
 // WebSocket connection handler
 wss.on('connection', (ws) => {
   console.log('新的 WebSocket 连接');
@@ -23,15 +28,24 @@ wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'initial', events: events }));
 
   ws.on('message', (message) => {
-    const data = JSON.parse(message);
-    if (data.type === 'newEvent') {
-      // 广播新事件给所有连接的客户端
-      wss.clients.forEach((client) => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify(data));
-        }
-      });
+    console.log('收到消息:', message);
+    try {
+      const data = JSON.parse(message);
+      if (data.type === 'newEvent') {
+        // 广播新事件给所有连接的客户端
+        wss.clients.forEach((client) => {
+          if (client !== ws && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(data));
+          }
+        });
+      }
+    } catch (error) {
+      console.error('处理消息时出错:', error);
     }
+  });
+
+  ws.on('error', (error) => {
+    console.error('WebSocket connection error:', error);
   });
 
   ws.on('close', () => {
@@ -58,11 +72,13 @@ function validateEventData(eventData) {
 }
 
 app.post('/api/events', (req, res) => {
+  console.log('收到 POST 请求 /api/events:', req.body);
   const newEvent = req.body;
   
   // 验证事件数据
   const validationError = validateEventData(newEvent);
   if (validationError) {
+    console.error('事件验证失败:', validationError);
     return res.status(400).json({ error: validationError });
   }
   
@@ -79,11 +95,13 @@ app.post('/api/events', (req, res) => {
     }
   });
   
+  console.log('新事件已创建:', newEvent);
   // 返回新创建的事件
   res.status(201).json(newEvent);
 });
 
 app.get('/api/events', (req, res) => {
+  console.log('收到 GET 请求 /api/events');
   res.json(events);
 });
 

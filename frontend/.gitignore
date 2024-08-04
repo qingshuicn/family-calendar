@@ -51,7 +51,7 @@ jspm_packages/
 
 # MacOS files
 .DS_Store
-
+.DS_Store
 # Miscellaneous
 *.swp
 *~
