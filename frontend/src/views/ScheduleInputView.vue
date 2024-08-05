@@ -22,13 +22,12 @@ export default {
       try {
         console.log('正在发送请求...');
         console.log('API URL:', this.apiUrl);
-        console.log('API Key:', this.apiKey);
+        console.log('API Key (前5个字符):', this.apiKey.substring(0, 5));
 
         const requestBody = {
           inputs: {
             user_input: this.scheduleInput
           }
-          // 注意：这里没有包含 workflow_id，因为您没有提供。如果需要，请添加它。
         };
 
         console.log('请求体:', JSON.stringify(requestBody));
@@ -36,7 +35,7 @@ export default {
         const response = await axios.post(this.apiUrl, requestBody, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': this.apiKey
+            'Authorization': `Bearer ${this.apiKey}`  // 添加 Bearer 前缀
           }
         });
 
@@ -60,7 +59,7 @@ export default {
   mounted() {
     console.log('组件已挂载');
     console.log('API URL:', this.apiUrl);
-    console.log('API Key:', this.apiKey);
+    console.log('API Key (前5个字符):', this.apiKey.substring(0, 5));
   }
 };
 </script>
