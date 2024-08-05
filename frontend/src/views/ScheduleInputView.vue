@@ -13,22 +13,33 @@ export default {
   data() {
     return {
       scheduleInput: '',
+      apiKey: 'app-zyuogN6iPjys8j4R7fTj8M2z',
+      apiUrl: 'https://api.dify.ai/v1/workflows/run'
     };
   },
   methods: {
     async submitSchedule() {
       try {
-        const response = await axios.post('https://api.dify.ai/v1/workflows/run', {
-          "inputs": {
-            "user_input": this.scheduleInput
-          },
-          "workflow_id": process.env.VUE_APP_WORKFLOW_ID
-        }, {
+        console.log('正在发送请求...');
+        console.log('API URL:', this.apiUrl);
+        console.log('API Key:', this.apiKey);
+
+        const requestBody = {
+          inputs: {
+            user_input: this.scheduleInput
+          }
+          // 注意：这里没有包含 workflow_id，因为您没有提供。如果需要，请添加它。
+        };
+
+        console.log('请求体:', JSON.stringify(requestBody));
+
+        const response = await axios.post(this.apiUrl, requestBody, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.VUE_APP_DIFY_API_KEY}`
+            'Authorization': this.apiKey
           }
         });
+
         console.log('日程提交成功:', response.data);
         // 处理成功响应
       } catch (error) {
@@ -37,10 +48,19 @@ export default {
           console.error('错误数据:', error.response.data);
           console.error('错误状态:', error.response.status);
           console.error('错误头部:', error.response.headers);
+        } else if (error.request) {
+          console.error('未收到响应:', error.request);
+        } else {
+          console.error('错误信息:', error.message);
         }
-        // 处理错误
+        console.error('错误配置:', error.config);
       }
     }
+  },
+  mounted() {
+    console.log('组件已挂载');
+    console.log('API URL:', this.apiUrl);
+    console.log('API Key:', this.apiKey);
   }
 };
 </script>
