@@ -14,7 +14,8 @@ export default {
     return {
       scheduleInput: '',
       apiKey: 'app-zyuogN6iPjys8j4R7fTj8M2z',
-      apiUrl: 'https://api.dify.ai/v1/workflows/run'
+      apiUrl: 'https://api.dify.ai/v1/workflows/run',
+      userId: 'user-123' // 这里应该使用一个唯一的用户标识符
     };
   },
   methods: {
@@ -27,7 +28,9 @@ export default {
         const requestBody = {
           inputs: {
             user_input: this.scheduleInput
-          }
+          },
+          response_mode: "blocking", // 或者使用 "streaming"，取决于您的需求
+          user: this.userId
         };
 
         console.log('请求体:', JSON.stringify(requestBody));
