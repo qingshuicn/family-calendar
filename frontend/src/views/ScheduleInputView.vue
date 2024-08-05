@@ -21,7 +21,6 @@ export default {
       scheduleInput: '',
       apiKey: 'app-zyuogN6iPjys8j4R7fTj8M2z',
       apiUrl: 'https://api.dify.ai/v1/workflows/run',
-      appId: 'b36203ef-fcdc-4bdc-ac17-7f6d3e1f5dbe',
       userId: 'user-123', // 这里应该使用一个唯一的用户标识符
       response: null
     };
