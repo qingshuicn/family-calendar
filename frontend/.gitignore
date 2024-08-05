@@ -42,7 +42,7 @@ jspm_packages/
 .env
 .env.test
 .env.production
-
+.env*
 # IDE directories
 .vscode/
 .idea/
