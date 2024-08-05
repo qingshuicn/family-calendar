@@ -14,7 +14,7 @@ export default {
     return {
       scheduleInput: '',
       apiKey: 'app-zyuogN6iPjys8j4R7fTj8M2z',
-      apiUrl: 'https://api.dify.ai/v1/chat-messages',
+      apiUrl: 'https://api.dify.ai/v1/workflows/run',
       appId: 'b36203ef-fcdc-4bdc-ac17-7f6d3e1f5dbe',
       userId: 'user-123' // 这里应该使用一个唯一的用户标识符
     };
@@ -29,9 +29,8 @@ export default {
 
         const requestBody = {
           inputs: {
-            message: this.scheduleInput
+            text: this.scheduleInput
           },
-          query: this.scheduleInput,
           response_mode: "blocking",
           user: this.userId
         };
@@ -41,8 +40,10 @@ export default {
         const config = {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey.trim()}`,
-            'X-App-Id': this.appId
+            'Authorization': `Bearer ${this.apiKey.trim()}`
+          },
+          params: {
+            app_id: this.appId
           }
         };
 
