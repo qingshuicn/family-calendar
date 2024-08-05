@@ -14,7 +14,8 @@ export default {
     return {
       scheduleInput: '',
       apiKey: 'app-zyuogN6iPjys8j4R7fTj8M2z',
-      apiUrl: 'https://api.dify.ai/v1/workflows/run',
+      apiUrl: 'https://api.dify.ai/v1/chat-messages',
+      appId: 'b36203ef-fcdc-4bdc-ac17-7f6d3e1f5dbe',
       userId: 'user-123' // 这里应该使用一个唯一的用户标识符
     };
   },
@@ -23,12 +24,14 @@ export default {
       try {
         console.log('正在发送请求...');
         console.log('API URL:', this.apiUrl);
+        console.log('App ID:', this.appId);
         console.log('API Key (前5个字符):', this.apiKey.substring(0, 5));
 
         const requestBody = {
           inputs: {
-            text: this.scheduleInput
+            message: this.scheduleInput
           },
+          query: this.scheduleInput,
           response_mode: "blocking",
           user: this.userId
         };
@@ -38,7 +41,8 @@ export default {
         const config = {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey.trim()}`
+            'Authorization': `Bearer ${this.apiKey.trim()}`,
+            'X-App-Id': this.appId
           }
         };
 
@@ -76,6 +80,7 @@ export default {
   mounted() {
     console.log('组件已挂载');
     console.log('API URL:', this.apiUrl);
+    console.log('App ID:', this.appId);
     console.log('API Key (前5个字符):', this.apiKey.substring(0, 5));
   }
 };
