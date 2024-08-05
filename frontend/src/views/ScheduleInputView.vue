@@ -32,27 +32,41 @@ export default {
 
         console.log('请求体:', JSON.stringify(requestBody));
 
-        const response = await axios.post(this.apiUrl, requestBody, {
+        const config = {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`  // 添加 Bearer 前缀
+            'Authorization': `Bearer ${this.apiKey.trim()}`
           }
-        });
+        };
+
+        console.log('请求配置 (不包含完整 API Key):', JSON.stringify({
+          ...config,
+          headers: {
+            ...config.headers,
+            'Authorization': 'Bearer [HIDDEN]'
+          }
+        }));
+
+        const response = await axios.post(this.apiUrl, requestBody, config);
 
         console.log('日程提交成功:', response.data);
         // 处理成功响应
       } catch (error) {
-        console.error('提交日程时出错:', error);
+        console.error('提交日程时出错:', error.message);
         if (error.response) {
           console.error('错误数据:', error.response.data);
           console.error('错误状态:', error.response.status);
           console.error('错误头部:', error.response.headers);
         } else if (error.request) {
           console.error('未收到响应:', error.request);
-        } else {
-          console.error('错误信息:', error.message);
         }
-        console.error('错误配置:', error.config);
+        console.error('错误配置 (不包含完整 API Key):', JSON.stringify({
+          ...error.config,
+          headers: {
+            ...error.config.headers,
+            'Authorization': 'Bearer [HIDDEN]'
+          }
+        }));
       }
     }
   },
@@ -64,7 +78,6 @@ export default {
 };
 </script>
 
-  
   <style scoped>
   .schedule-input-view {
     display: flex;
