@@ -27,9 +27,9 @@ export default {
 
         const requestBody = {
           inputs: {
-            user_input: this.scheduleInput
+            text: this.scheduleInput
           },
-          response_mode: "blocking", // 或者使用 "streaming"，取决于您的需求
+          response_mode: "blocking",
           user: this.userId
         };
 
