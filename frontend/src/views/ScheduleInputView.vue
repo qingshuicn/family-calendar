@@ -22,11 +22,11 @@ export default {
           "inputs": {
             "user_input": this.scheduleInput
           },
-          "workflow_id": "YOUR_WORKFLOW_ID_HERE"
+          "workflow_id": process.env.VUE_APP_WORKFLOW_ID
         }, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer YOUR_API_KEY_HERE'
+            'Authorization': `Bearer ${process.env.VUE_APP_DIFY_API_KEY}`
           }
         });
         console.log('日程提交成功:', response.data);
