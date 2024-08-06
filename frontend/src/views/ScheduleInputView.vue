@@ -19,9 +19,9 @@ export default {
   data() {
     return {
       scheduleInput: '',
-      apiKey: 'app-zyuogN6iPjys8j4R7fTj8M2z',
-      apiUrl: 'https://api.dify.ai/v1/workflows/run',
-      userId: 'user-123', // 这里应该使用一个唯一的用户标识符
+      apiKey: 'app-zyuogN6iPjys8j4R7fTj8M2z', // 使用您提供的 API 密钥
+      apiUrl: 'https://api.dify.ai/v1/workflows/run', // 使用您提供的 API 端点
+      userId: 'your-user-id', // 使用适当的用户 ID
       response: null
     };
   },
@@ -30,12 +30,11 @@ export default {
       try {
         console.log('正在发送请求...');
         console.log('API URL:', this.apiUrl);
-        console.log('App ID:', this.appId);
         console.log('API Key (前5个字符):', this.apiKey.substring(0, 5));
 
         const requestBody = {
           inputs: {
-            text: this.scheduleInput
+            input: this.scheduleInput // 使用 'input' 作为键名
           },
           response_mode: "blocking",
           user: this.userId
@@ -50,14 +49,17 @@ export default {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${this.apiKey.trim()}`
-          },
-          params: {
-            app_id: this.appId
           }
         });
 
         console.log('响应:', response.data);
-        this.response = JSON.stringify(response.data, null, 2);
+
+        if (response.data && response.data.data && response.data.data.outputs && response.data.data.outputs.text) {
+          this.response = response.data.data.outputs.text;
+        } else {
+          this.response = '未找到有效的输出';
+          console.log('API 响应中没有找到预期的输出结构');
+        }
 
       } catch (error) {
         console.error('提交日程时出错:', error.message);
@@ -73,11 +75,6 @@ export default {
           this.response = '错误: ' + error.message;
         }
       }
-    },
-    // eslint-disable-next-line no-unused-vars
-    handleStreamEvent(event) {
-      // 此方法暂时保留，以便将来可能的流式处理
-      console.log('收到事件:', event);
     }
   }
 };
