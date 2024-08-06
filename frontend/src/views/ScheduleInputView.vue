@@ -19,9 +19,9 @@ export default {
   data() {
     return {
       scheduleInput: '',
-      apiKey: 'app-zyuogN6iPjys8j4R7fTj8M2z', // 使用您提供的 API 密钥
-      apiUrl: 'https://api.dify.ai/v1/workflows/run', // 使用您提供的 API 端点
-      userId: 'your-user-id', // 使用适当的用户 ID
+      apiKey: process.env.VUE_APP_DIFY_API_KEY,
+      apiUrl: process.env.VUE_APP_DIFY_API_URL,
+      userId: 'your-user-id', // 考虑也将此移至环境变量
       response: null
     };
   },
@@ -34,7 +34,7 @@ export default {
 
         const requestBody = {
           inputs: {
-            input: this.scheduleInput // 使用 'input' 作为键名
+            input: this.scheduleInput
           },
           response_mode: "blocking",
           user: this.userId
@@ -79,6 +79,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .schedule-input-view {
