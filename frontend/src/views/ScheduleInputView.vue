@@ -1,8 +1,17 @@
 <template>
   <div class="schedule-input-view">
     <h2>日程安排输入</h2>
-    <textarea v-model="scheduleInput" placeholder="输入您的日程安排..." rows="4"></textarea>
-    <button @click="submitSchedule">提交日程</button>
+    <textarea 
+      v-model="scheduleInput" 
+      placeholder="输入您的日程安排..." 
+      rows="4"
+    ></textarea>
+    <button 
+      @click="submitSchedule" 
+      :disabled="isSubmitting"
+    >
+      {{ isSubmitting ? '提交中...' : '提交日程' }}
+    </button>
     <div v-if="response" class="response-area">
       <h3>响应：</h3>
       <pre>{{ response }}</pre>
@@ -22,11 +31,15 @@ export default {
       apiKey: process.env.VUE_APP_DIFY_API_KEY,
       apiUrl: process.env.VUE_APP_DIFY_API_URL,
       userId: 'your-user-id', // 考虑也将此移至环境变量
-      response: null
+      response: null,
+      isSubmitting: false
     };
   },
   methods: {
     async submitSchedule() {
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
+
       try {
         console.log('正在发送请求...');
         console.log('API URL:', this.apiUrl);
@@ -74,12 +87,13 @@ export default {
         } else {
           this.response = '错误: ' + error.message;
         }
+      } finally {
+        this.isSubmitting = false;
       }
     }
   }
 };
 </script>
-
 
 <style scoped>
 .schedule-input-view {
@@ -92,6 +106,7 @@ export default {
 h2 {
   color: #333;
   margin-bottom: 20px;
+  font-size: 1.5rem;
 }
 
 textarea {
@@ -101,20 +116,28 @@ textarea {
   border: 1px solid #ddd;
   border-radius: 4px;
   resize: vertical;
+  font-size: 16px; /* 防止在移动设备上缩放 */
 }
 
 button {
   background-color: #4a0e4e;
   color: white;
-  padding: 10px 20px;
+  padding: 12px 20px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 16px;
+  width: 100%; /* 在移动设备上占满宽度 */
+  transition: background-color 0.3s;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   background-color: #3a0b3e;
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
 .response-area {
@@ -137,5 +160,28 @@ pre {
   padding: 10px;
   border-radius: 4px;
   font-size: 14px;
+  overflow-x: auto; /* 允许在小屏幕上水平滚动 */
+}
+
+@media (max-width: 768px) {
+  .schedule-input-view {
+    padding: 15px;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+  }
+
+  textarea {
+    padding: 8px;
+  }
+
+  button {
+    padding: 10px 15px;
+  }
+
+  pre {
+    font-size: 12px;
+  }
 }
 </style>
