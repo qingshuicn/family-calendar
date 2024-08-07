@@ -26,9 +26,22 @@ h1 {
   overflow: hidden;
 }
 
-.main-content {
-  flex-grow: 1;
+.sidebar {
+  width: 250px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.main-content {
+  flex-grow: 1;
+  overflow: hidden; /* 改为 hidden */
+  display: flex; /* 添加 */
+  flex-direction: column; /* 添加 */
+}
+
+.main-content .schedule-view {
+  flex-grow: 1; /* 添加 */
+  overflow: auto; /* 添加 */
 }

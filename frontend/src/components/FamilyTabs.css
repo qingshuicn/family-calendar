@@ -1,51 +1,98 @@
 .family-tabs {
   display: flex;
+  flex-direction: column;
   gap: 10px;
   margin-bottom: 20px;
 }
 
-.family-tabs button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 20px;
+.member-tab {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 8px;
   background-color: #f0f0f0;
   cursor: pointer;
   transition: all 0.3s;
   color: #333;
   font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.family-tabs button.active {
+.member-tab.active {
   background-color: #4a0e4e;
   color: white;
 }
 
-.family-tabs button:hover {
+.member-tab:hover {
   background-color: #e0e0e0;
 }
 
-.family-tabs button.active:hover {
+.member-tab.active:hover {
   background-color: #3a0b3e;
 }
 
+.member-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
+}
+
+.member-info {
+  flex-grow: 1;
+}
+
+.member-name {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.achievement-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.achievement-icons .moon,
+.achievement-icons .sun,
+.achievement-icons .crown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.member-tab.active .achievement-icons .moon,
+.member-tab.active .achievement-icons .sun,
+.member-tab.active .achievement-icons .crown {
+  background-color: #ffffff3d;
+  color: #fff;
+}
+
+.achievement-icons .stars {
+  color: #ffd700;
+  text-shadow: 0 0 2px rgba(0,0,0,0.3);
+}
+
 .add-event-btn {
-  margin-left: auto;
-  background-color: #4a0e4e !important;
-  color: white !important;
+  margin-top: 10px;
+  padding: 10px 20px;
+  background-color: #4a0e4e;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  align-self: flex-start;
 }
 
 .add-event-btn:hover {
-  background-color: #3a0b3e !important;
-}
-
-/* 新增样式以确保未选中的标签也清晰可见 */
-.family-tabs .member-tab {
-  color: #333;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.family-tabs .member-tab:not(.active):hover {
-  background-color: #e0e0e0;
-  color: #4a0e4e;
+  background-color: #3a0b3e;
 }
