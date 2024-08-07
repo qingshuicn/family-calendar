@@ -1,9 +1,9 @@
 <template>
   <div class="home-view">
-    <div class="header">
+    <header class="header">
       <h1>家庭日程</h1>
       <CurrentDateTime />
-    </div>
+    </header>
     <div class="layout">
       <div class="sidebar">
         <MonthlyCalendar 

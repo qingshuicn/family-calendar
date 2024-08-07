@@ -1,41 +1,47 @@
 <template>
   <div class="schedule-view">
-    <div class="time-column" ref="timeColumn">
-      <div v-for="hour in displayHours" :key="hour" class="time-slot">
-        <span class="hour-label">{{ formatHour(hour) }}</span>
-        <div v-for="minute in [0, 15, 30, 45]" :key="minute" class="minute-mark"></div>
+    <div class="time-axis">
+      <div v-for="hour in timeSlots" :key="hour" class="time-slot">
+        {{ formatHour(hour) }}
       </div>
     </div>
-    <div class="events-column" ref="eventsColumn" @scroll="handleScroll">
-      <div class="events-content">
-        <div v-for="hour in displayHours" :key="hour" class="hour-slot">
-          <div v-for="minute in [0, 15, 30, 45]" :key="minute" class="minute-slot"></div>
+    <div class="events-container">
+      <div 
+        v-for="event in adjustedEvents" 
+        :key="event.id"
+        class="event-item"
+        :style="getEventStyle(event)"
+        @click="openCompletionDialog(event)"
+      >
+        <div class="event-header">
+          <span class="event-role" :class="getRoleClass(event.role)">{{ event.role }}</span>
+          <span class="event-status" :class="{ 'completed': event.completed }">
+            {{ event.completed ? '已完成' : '未完成' }}
+          </span>
         </div>
-        <div 
-          v-for="(group, groupIndex) in processedEvents" 
-          :key="groupIndex"
-          class="event-group"
-        >
-          <div 
-            v-for="(event, eventIndex) in group" 
-            :key="event.startDate + event.title"
-            class="event"
-            :style="getEventStyle(event, eventIndex, group.length)"
-            :class="getRoleClass(event.role)"
-          >
-            <h3>{{ event.title }}</h3>
-            <p>{{ formatEventTime(event) }}</p>
-            <p class="event-description">{{ event.description }}</p>
-          </div>
+        <div class="event-content">
+          <h3 class="event-title">{{ event.title }}</h3>
+          <p class="event-time">{{ formatEventTime(event) }}</p>
         </div>
-        <div class="current-time-line" :style="currentTimeLineStyle"></div>
+      </div>
+    </div>
+    <div v-if="selectedEvent" class="completion-dialog">
+      <div class="dialog-content">
+        <h3>{{ selectedEvent.title }}</h3>
+        <p v-if="!selectedEvent.completed">是否已完成此事件？</p>
+        <p v-else>是否要取消此事件的完成状态？</p>
+        <div class="dialog-buttons">
+          <button @click="completeEvent(!selectedEvent.completed)">是</button>
+          <button @click="closeDialog">否</button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
+import axios from 'axios';
 
 const props = defineProps({
   events: {
@@ -44,58 +50,45 @@ const props = defineProps({
   }
 });
 
-const timeColumn = ref(null);
-const eventsColumn = ref(null);
-const currentTime = ref(new Date());
+const selectedEvent = ref(null);
+const timeSlots = Array.from({ length: 18 }, (_, i) => i + 6);
 
-const displayHours = Array.from({ length: 17 }, (_, i) => i + 6); // 6:00 to 22:00
+const adjustedEvents = computed(() => {
+  return props.events.map(event => {
+    const start = new Date(event.startDate);
+    let end = new Date(event.endDate);
+    
+    if (end.getHours() >= 23 && end.getMinutes() > 0) {
+      end = new Date(end.setHours(23, 0, 0, 0));
+    }
+    
+    return { ...event, adjustedEndDate: end, adjustedStartDate: start };
+  }).filter(event => {
+    const startHour = new Date(event.adjustedStartDate).getHours();
+    return startHour >= 6 && startHour < 23;
+  });
+});
 
 const formatHour = (hour) => `${hour.toString().padStart(2, '0')}:00`;
 
 const formatEventTime = (event) => {
-  const start = new Date(event.startDate);
-  const end = new Date(event.endDate);
+  const start = new Date(event.adjustedStartDate);
+  const end = new Date(event.adjustedEndDate);
   return `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
 };
 
-const processedEvents = computed(() => {
-  const sortedEvents = [...props.events].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-  const groups = [];
-  let currentGroup = [];
-
-  for (const event of sortedEvents) {
-    if (currentGroup.length === 0) {
-      currentGroup.push(event);
-    } else {
-      const lastEvent = currentGroup[currentGroup.length - 1];
-      if (new Date(event.startDate) < new Date(lastEvent.endDate)) {
-        currentGroup.push(event);
-      } else {
-        groups.push(currentGroup);
-        currentGroup = [event];
-      }
-    }
-  }
-  if (currentGroup.length > 0) {
-    groups.push(currentGroup);
-  }
-  return groups;
-});
-
-const getEventStyle = (event, index, totalEvents) => {
-  const start = new Date(event.startDate);
-  const end = new Date(event.endDate);
-  const startMinutes = (start.getHours() - 6) * 60 + start.getMinutes();
-  const durationMinutes = (end - start) / 60000;
-
-  const width = `${100 / totalEvents}%`;
-  const left = `${(index / totalEvents) * 100}%`;
+const getEventStyle = (event) => {
+  const start = new Date(event.adjustedStartDate);
+  const end = new Date(event.adjustedEndDate);
+  const startPercentage = (start.getHours() + start.getMinutes() / 60 - 6) / 17 * 100;
+  const endPercentage = Math.min((end.getHours() + end.getMinutes() / 60 - 6) / 17 * 100, 100);
+  const heightPercentage = endPercentage - startPercentage;
 
   return {
-    top: `${startMinutes}px`,
-    height: `${durationMinutes}px`,
-    width,
-    left,
+    top: `${startPercentage}%`,
+    height: `${heightPercentage}%`,
+    left: '60px',
+    right: '10px'
   };
 };
 
@@ -112,114 +105,119 @@ const getRoleClass = (role) => {
   return roleMap[role] || 'role-default';
 };
 
-const currentTimeLineStyle = computed(() => {
-  const minutes = (currentTime.value.getHours() - 6) * 60 + currentTime.value.getMinutes();
-  return { top: `${minutes}px` };
-});
-
-const updateCurrentTime = () => {
-  currentTime.value = new Date();
+const openCompletionDialog = (event) => {
+  selectedEvent.value = event;
 };
 
-let timer;
+const closeDialog = () => {
+  selectedEvent.value = null;
+};
 
-onMounted(() => {
-  if (eventsColumn.value) {
-    eventsColumn.value.addEventListener('scroll', handleScroll);
+const completeEvent = async (isCompleted) => {
+  if (selectedEvent.value) {
+    try {
+      const response = await axios.put(`/api/events/${selectedEvent.value._id}/complete`, {
+        completed: isCompleted
+      });
+      if (response.status === 200) {
+        selectedEvent.value.completed = isCompleted;
+        console.log(`事件 "${selectedEvent.value.title}" ${isCompleted ? '已完成' : '已取消完成'}`);
+      } else {
+        console.error('更新事件状态失败');
+      }
+    } catch (error) {
+      console.error('更新事件状态时发生错误:', error);
+    }
+    selectedEvent.value = null;
   }
-  timer = setInterval(updateCurrentTime, 60000); // Update every minute
-});
-
-onUnmounted(() => {
-  if (eventsColumn.value) {
-    eventsColumn.value.removeEventListener('scroll', handleScroll);
-  }
-  clearInterval(timer);
-});
-
-function handleScroll(event) {
-  if (timeColumn.value) {
-    timeColumn.value.scrollTop = event.target.scrollTop;
-  }
-}
+};
 </script>
 
 <style scoped>
 .schedule-view {
   display: flex;
   height: 100%;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  background-color: #fff;
+  background-color: #f5f7fa;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.time-column {
+.time-axis {
   width: 60px;
-  border-right: 1px solid #f0f0f0;
-  background-color: #fafafa;
-  z-index: 1;
-  overflow-y: hidden;
+  background-color: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
 }
 
-.events-column {
-  flex-grow: 1;
-  position: relative;
-  overflow-y: scroll;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.events-column::-webkit-scrollbar { 
-  width: 0;
-  height: 0;
-  display: none;
-}
-
-.events-content {
-  position: relative;
-}
-
-.time-slot, .hour-slot {
-  height: 60px;
-  position: relative;
-}
-
-.hour-label {
-  position: absolute;
-  top: -7px;
-  left: 5px;
+.time-slot {
+  height: calc(100% / 17);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 12px;
   color: #666;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.minute-mark, .minute-slot {
-  height: 15px;
-  border-bottom: 1px dashed #f0f0f0;
+.events-container {
+  flex-grow: 1;
+  position: relative;
+  overflow: hidden;
 }
 
-.minute-mark:last-child, .minute-slot:last-child {
-  border-bottom: none;
-}
-
-.event-group {
+.event-item {
   position: absolute;
   left: 0;
   right: 0;
-}
-
-.event {
-  position: absolute;
+  background-color: #ffffff;
   border-radius: 4px;
-  padding: 5px;
-  font-size: 12px;
+  padding: 4px 8px;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.event h3 {
+.event-item:hover {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.event-role {
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.event-status {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background-color: #ffcccb;
+  color: #d32f2f;
+}
+
+.event-status.completed {
+  background-color: #c8e6c9;
+  color: #388e3c;
+}
+
+.event-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.event-title {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
@@ -229,35 +227,63 @@ function handleScroll(event) {
   text-overflow: ellipsis;
 }
 
-.event p {
+.event-time {
   margin: 2px 0 0;
   font-size: 12px;
   color: #666;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.event-description {
-  font-style: italic;
-}
-
-.current-time-line {
-  position: absolute;
+.completion-dialog {
+  position: fixed;
+  top: 0;
   left: 0;
   right: 0;
-  height: 2px;
-  background-color: #f44336;
-  z-index: 2;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
-/* 为不同角色添加不同的颜色 */
-.event.role-dad { border-left: 4px solid #2196f3; background-color: #e3f2fd; }
-.event.role-mom { border-left: 4px solid #4caf50; background-color: #e8f5e9; }
-.event.role-brother { border-left: 4px solid #ff9800; background-color: #fff3e0; }
-.event.role-sister { border-left: 4px solid #9c27b0; background-color: #f3e5f5; }
-.event.role-little-brother { border-left: 4px solid #795548; background-color: #efebe9; }
-.event.role-little-sister { border-left: 4px solid #e91e63; background-color: #fce4ec; }
-.event.role-aunt { border-left: 4px solid #009688; background-color: #e0f2f1; }
-.event.role-default { border-left: 4px solid #607d8b; background-color: #eceff1; }
+.dialog-content {
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.dialog-buttons {
+  margin-top: 20px;
+}
+
+.dialog-buttons button {
+  margin: 0 10px;
+  padding: 5px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dialog-buttons button:first-child {
+  background-color: #4caf50;
+  color: white;
+}
+
+.dialog-buttons button:last-child {
+  background-color: #f44336;
+  color: white;
+}
+
+/* 角色特定颜色 */
+.role-dad { background-color: #4a90e2; color: white; }
+.role-mom { background-color: #50e3c2; color: white; }
+.role-brother { background-color: #f5a623; color: white; }
+.role-sister { background-color: #b8e986; color: black; }
+.role-little-brother { background-color: #bd10e0; color: white; }
+.role-little-sister { background-color: #e2495f; color: white; }
+.role-aunt { background-color: #9013fe; color: white; }
+.role-default { background-color: #7ed321; color: white; }
 </style>

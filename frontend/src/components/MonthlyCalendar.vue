@@ -123,49 +123,58 @@ export default {
 <style scoped>
 .monthly-calendar {
   background-color: white;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 16px;
   font-size: 0.9em;
-  max-width: 280px;
+  max-width: 300px;
 }
 
 .calendar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
+  font-weight: 500;
+  color: #4a0e4e;
 }
 
 .calendar-header button {
   background: none;
   border: none;
-  font-size: 1em;
+  font-size: 1.2em;
   cursor: pointer;
   color: #4a0e4e;
+  transition: color 0.3s ease;
+}
+
+.calendar-header button:hover {
+  color: #6a1c6e;
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 4px;
 }
 
 .weekday {
   text-align: center;
-  font-weight: bold;
+  font-weight: 500;
   color: #4a0e4e;
   font-size: 0.8em;
-  padding: 4px 0;
+  padding: 8px 0;
+  text-transform: uppercase;
 }
 
 .calendar-day {
   text-align: center;
-  padding: 4px 0;
-  border-radius: 3px;
+  padding: 8px 0;
+  border-radius: 4px;
   cursor: pointer;
   position: relative;
   font-size: 0.9em;
+  transition: background-color 0.3s ease;
 }
 
 .current-month {
@@ -175,21 +184,26 @@ export default {
 .today {
   background-color: #4a0e4e;
   color: white;
+  font-weight: bold;
 }
 
 .has-events::after {
   content: '';
   position: absolute;
-  bottom: 1px;
+  bottom: 2px;
   left: 50%;
   transform: translateX(-50%);
-  width: 3px;
-  height: 3px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background-color: #4a0e4e;
 }
 
 .calendar-day:not(.current-month) {
   color: #ccc;
+}
+
+.calendar-day:hover:not(.today) {
+  background-color: #e0e0e0;
 }
 </style>

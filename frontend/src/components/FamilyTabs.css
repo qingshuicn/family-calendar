@@ -96,3 +96,9 @@
 .add-event-btn:hover {
   background-color: #3a0b3e;
 }
+
+.achievement-icons {
+  display: flex;
+  gap: 5px;
+}
+

@@ -26,6 +26,13 @@ MongoClient.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true 
   })
   .catch(error => console.error('MongoDB 连接错误:', error));
 
+// 获取当前周数
+function getCurrentWeek() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return Math.ceil((((now - start) / 86400000) + start.getDay() + 1) / 7);
+}
+
 // WebSocket 错误处理
 wss.on('error', (error) => {
   console.error('WebSocket 服务器错误:', error);
@@ -88,9 +95,36 @@ function validateEventData(eventData) {
   return null; // 如果没有错误，返回 null
 }
 
+// 获取每周星星数
+app.get('/api/weekly-stars', async (req, res) => {
+  console.log('收到 GET 请求 /api/weekly-stars');
+  try {
+    const currentWeek = getCurrentWeek();
+    const stars = await db.collection('stars').find().toArray();
+    const result = {};
+    
+    for (let star of stars) {
+      if (star.lastUpdateWeek !== currentWeek) {
+        await db.collection('stars').updateOne(
+          { _id: star._id },
+          { $set: { stars: 0, lastUpdateWeek: currentWeek } }
+        );
+        result[star.role] = 0;
+      } else {
+        result[star.role] = star.stars;
+      }
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('获取每周星星数据时出错:', error);
+    res.status(500).json({ error: '服务器内部错误' });
+  }
+});
+
 app.post('/api/events', async (req, res) => {
   console.log('收到 POST 请求 /api/events:', req.body);
-  const newEvent = req.body;
+  const newEvent = { ...req.body, completed: false }; // 添加默认的 completed 字段
   
   // 验证事件数据
   const validationError = validateEventData(newEvent);
@@ -127,6 +161,64 @@ app.get('/api/events', async (req, res) => {
     res.json(events);
   } catch (error) {
     console.error('获取事件时出错:', error);
+    res.status(500).json({ error: '服务器内部错误' });
+  }
+});
+
+// 更新事件完成状态的路由
+app.put('/api/events/:id/complete', async (req, res) => {
+  console.log(`收到 PUT 请求 /api/events/${req.params.id}/complete`);
+  const { id } = req.params;
+  const { completed } = req.body;
+
+  try {
+    const event = await db.collection('events').findOne({ _id: new ObjectId(id) });
+    if (!event) {
+      return res.status(404).json({ error: '未找到事件' });
+    }
+
+    // 更新事件状态
+    await db.collection('events').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { completed: completed } }
+    );
+
+    let updatedStars = null;
+    if (completed) {
+      // 如果事件被标记为完成，更新星星数
+      const currentWeek = getCurrentWeek();
+      const updateStarResult = await db.collection('stars').findOneAndUpdate(
+        { role: event.role },
+        { 
+          $inc: { stars: 1 },
+          $set: { lastUpdateWeek: currentWeek }
+        },
+        { upsert: true, returnDocument: 'after' }
+      );
+      updatedStars = updateStarResult.value.stars;
+    }
+
+    // 获取更新后的事件
+    const updatedEvent = await db.collection('events').findOne({ _id: new ObjectId(id) });
+
+    // 广播事件更新给所有 WebSocket 客户端
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ 
+          type: 'updateEvent', 
+          event: updatedEvent,
+          updatedStars: updatedStars
+        }));
+      }
+    });
+
+    res.json({ 
+      message: '事件状态已更新', 
+      event: updatedEvent,
+      updatedStars: updatedStars
+    });
+  } catch (error) {
+    console.error('更新事件完成状态时出错:', error);
     res.status(500).json({ error: '服务器内部错误' });
   }
 });
