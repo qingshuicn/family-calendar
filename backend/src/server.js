@@ -3,30 +3,46 @@ const http = require('http');
 const WebSocket = require('ws');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const { MongoClient, ObjectId } = require('mongodb');
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const port = 3000;
+const mongoUrl = 'mongodb://localhost:27017';
+const dbName = 'familyScheduler';
 
 app.use(cors());
 app.use(bodyParser.json());
 
-let events = [];
+let db;
+
+// 连接到 MongoDB
+MongoClient.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(client => {
+    console.log('已成功连接到 MongoDB');
+    db = client.db(dbName);
+  })
+  .catch(error => console.error('MongoDB 连接错误:', error));
 
 // WebSocket 错误处理
 wss.on('error', (error) => {
-  console.error('WebSocket server error:', error);
+  console.error('WebSocket 服务器错误:', error);
 });
 
-// WebSocket connection handler
-wss.on('connection', (ws, req) => {
+// WebSocket 连接处理
+wss.on('connection', async (ws, req) => {
   console.log(`新的 WebSocket 连接，来自: ${req.socket.remoteAddress}`);
   console.log('请求头:', req.headers);
 
-  // 发送现有事件到新连接的客户端
-  ws.send(JSON.stringify({ type: 'initial', events: events }));
+  try {
+    // 发送现有事件到新连接的客户端
+    const events = await db.collection('events').find().toArray();
+    ws.send(JSON.stringify({ type: 'initial', events: events }));
+  } catch (error) {
+    console.error('获取初始事件时出错:', error);
+  }
 
   ws.on('message', (message) => {
     console.log('收到消息:', message.toString());
@@ -72,7 +88,7 @@ function validateEventData(eventData) {
   return null; // 如果没有错误，返回 null
 }
 
-app.post('/api/events', (req, res) => {
+app.post('/api/events', async (req, res) => {
   console.log('收到 POST 请求 /api/events:', req.body);
   const newEvent = req.body;
   
@@ -83,27 +99,36 @@ app.post('/api/events', (req, res) => {
     return res.status(400).json({ error: validationError });
   }
   
-  // 添加唯一 ID
-  newEvent.id = events.length + 1;
-  
-  // 将新事件添加到数组中
-  events.push(newEvent);
-  
-  // 广播新事件给所有 WebSocket 客户端
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'newEvent', event: newEvent }));
-    }
-  });
-  
-  console.log('新事件已创建:', newEvent);
-  // 返回新创建的事件
-  res.status(201).json(newEvent);
+  try {
+    // 将新事件添加到数据库
+    const result = await db.collection('events').insertOne(newEvent);
+    newEvent._id = result.insertedId;
+    
+    // 广播新事件给所有 WebSocket 客户端
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'newEvent', event: newEvent }));
+      }
+    });
+    
+    console.log('新事件已创建:', newEvent);
+    // 返回新创建的事件
+    res.status(201).json(newEvent);
+  } catch (error) {
+    console.error('创建新事件时出错:', error);
+    res.status(500).json({ error: '服务器内部错误' });
+  }
 });
 
-app.get('/api/events', (req, res) => {
+app.get('/api/events', async (req, res) => {
   console.log('收到 GET 请求 /api/events');
-  res.json(events);
+  try {
+    const events = await db.collection('events').find().toArray();
+    res.json(events);
+  } catch (error) {
+    console.error('获取事件时出错:', error);
+    res.status(500).json({ error: '服务器内部错误' });
+  }
 });
 
 server.listen(port, () => {
