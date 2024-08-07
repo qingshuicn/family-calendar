@@ -5,26 +5,15 @@
         {{ formatHour(hour) }}
       </div>
     </div>
-    <div class="events-container">
-      <div 
-        v-for="event in adjustedEvents" 
-        :key="event.id"
-        class="event-item"
-        :style="getEventStyle(event)"
-        @click="openCompletionDialog(event)"
-      >
-        <div class="event-header">
-          <span class="event-role" :class="getRoleClass(event.role)">{{ event.role }}</span>
-          <span class="event-status" :class="{ 'completed': event.completed }">
-            {{ event.completed ? '已完成' : '未完成' }}
-          </span>
-        </div>
-        <div class="event-content">
-          <h3 class="event-title">{{ event.title }}</h3>
-          <p class="event-time">{{ formatEventTime(event) }}</p>
-        </div>
-      </div>
-    </div>
+    <VirtualList
+      class="events-container"
+      :data-key="'id'"
+      :data-sources="adjustedEvents"
+      :data-component="EventItem"
+      :estimate-size="60"
+      :direction="'vertical'"
+      @item-click="openCompletionDialog"
+    />
     <div v-if="selectedEvent" class="completion-dialog">
       <div class="dialog-content">
         <h3>{{ selectedEvent.title }}</h3>
@@ -40,8 +29,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import axios from 'axios';
+import { ref, computed, defineComponent, h } from 'vue';
+import { useEventStore } from '@/stores/events';
+import VirtualList from 'vue3-virtual-scroll-list';
 
 const props = defineProps({
   events: {
@@ -50,8 +40,72 @@ const props = defineProps({
   }
 });
 
+const eventStore = useEventStore();
 const selectedEvent = ref(null);
 const timeSlots = Array.from({ length: 18 }, (_, i) => i + 6);
+
+const useEventHelpers = () => {
+  const getEventStyle = (event) => {
+    const start = new Date(event.adjustedStartDate);
+    const end = new Date(event.adjustedEndDate);
+    const startPercentage = (start.getHours() + start.getMinutes() / 60 - 6) / 17 * 100;
+    const heightPercentage = ((end.getHours() + end.getMinutes() / 60) - (start.getHours() + start.getMinutes() / 60)) / 17 * 100;
+
+    return {
+      top: `${startPercentage}%`,
+      height: `${heightPercentage}%`,
+      left: '60px',
+      right: '10px',
+      position: 'absolute'
+    };
+  };
+
+  const getRoleClass = (role) => {
+    const roleMap = {
+      '爸爸': 'role-dad',
+      '妈妈': 'role-mom',
+      '哥哥': 'role-brother',
+      '姐姐': 'role-sister',
+      '弟弟': 'role-little-brother',
+      '妹妹': 'role-little-sister',
+      '阿姨': 'role-aunt'
+    };
+    return roleMap[role] || 'role-default';
+  };
+
+  const formatEventTime = (event) => {
+    const start = new Date(event.adjustedStartDate);
+    const end = new Date(event.adjustedEndDate);
+    return `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  return { getEventStyle, getRoleClass, formatEventTime };
+};
+
+const EventItem = defineComponent({
+  props: ['source'],
+  setup(props) {
+    const { getEventStyle, getRoleClass, formatEventTime } = useEventHelpers();
+
+    return () => h('div', {
+      class: 'event-item',
+      style: getEventStyle(props.source),
+    }, [
+      h('div', { class: 'event-header' }, [
+        h('span', { 
+          class: ['event-role', getRoleClass(props.source.role)] 
+        }, props.source.role),
+        h('span', { 
+          class: ['event-status', { 'completed': props.source.completed }] 
+        }, props.source.completed ? '已完成' : '未完成')
+      ]),
+      h('div', { class: 'event-content' }, [
+        h('h3', { class: 'event-title' }, props.source.title),
+        h('p', { class: 'event-time' }, formatEventTime(props.source))
+      ])
+    ]);
+  }
+});
 
 const adjustedEvents = computed(() => {
   return props.events.map(event => {
@@ -62,7 +116,7 @@ const adjustedEvents = computed(() => {
       end = new Date(end.setHours(23, 0, 0, 0));
     }
     
-    return { ...event, adjustedEndDate: end, adjustedStartDate: start };
+    return { ...event, adjustedEndDate: end, adjustedStartDate: start, id: event._id };
   }).filter(event => {
     const startHour = new Date(event.adjustedStartDate).getHours();
     return startHour >= 6 && startHour < 23;
@@ -71,42 +125,8 @@ const adjustedEvents = computed(() => {
 
 const formatHour = (hour) => `${hour.toString().padStart(2, '0')}:00`;
 
-const formatEventTime = (event) => {
-  const start = new Date(event.adjustedStartDate);
-  const end = new Date(event.adjustedEndDate);
-  return `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
-};
-
-const getEventStyle = (event) => {
-  const start = new Date(event.adjustedStartDate);
-  const end = new Date(event.adjustedEndDate);
-  const startPercentage = (start.getHours() + start.getMinutes() / 60 - 6) / 17 * 100;
-  const endPercentage = Math.min((end.getHours() + end.getMinutes() / 60 - 6) / 17 * 100, 100);
-  const heightPercentage = endPercentage - startPercentage;
-
-  return {
-    top: `${startPercentage}%`,
-    height: `${heightPercentage}%`,
-    left: '60px',
-    right: '10px'
-  };
-};
-
-const getRoleClass = (role) => {
-  const roleMap = {
-    '爸爸': 'role-dad',
-    '妈妈': 'role-mom',
-    '哥哥': 'role-brother',
-    '姐姐': 'role-sister',
-    '弟弟': 'role-little-brother',
-    '妹妹': 'role-little-sister',
-    '阿姨': 'role-aunt'
-  };
-  return roleMap[role] || 'role-default';
-};
-
 const openCompletionDialog = (event) => {
-  selectedEvent.value = event;
+  selectedEvent.value = event.source;
 };
 
 const closeDialog = () => {
@@ -116,14 +136,10 @@ const closeDialog = () => {
 const completeEvent = async (isCompleted) => {
   if (selectedEvent.value) {
     try {
-      const response = await axios.put(`/api/events/${selectedEvent.value._id}/complete`, {
-        completed: isCompleted
-      });
-      if (response.status === 200) {
-        selectedEvent.value.completed = isCompleted;
-        console.log(`事件 "${selectedEvent.value.title}" ${isCompleted ? '已完成' : '已取消完成'}`);
-      } else {
-        console.error('更新事件状态失败');
+      const updatedStars = await eventStore.updateEventCompletion(selectedEvent.value._id, isCompleted);
+      console.log(`事件 "${selectedEvent.value.title}" ${isCompleted ? '已完成' : '已取消完成'}`);
+      if (updatedStars !== null) {
+        console.log(`更新后的星星数: ${updatedStars}`);
       }
     } catch (error) {
       console.error('更新事件状态时发生错误:', error);
@@ -165,12 +181,10 @@ const completeEvent = async (isCompleted) => {
   flex-grow: 1;
   position: relative;
   overflow: hidden;
+  height: 100%;
 }
 
 .event-item {
-  position: absolute;
-  left: 0;
-  right: 0;
   background-color: #ffffff;
   border-radius: 4px;
   padding: 4px 8px;

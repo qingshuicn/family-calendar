@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
   pwa: {
     name: '家庭日历应用',
@@ -11,6 +13,14 @@ module.exports = {
     workboxOptions: {
       swSrc: './src/service-worker.js',
       swDest: 'service-worker.js',
+    }
+  },
+
+  configureWebpack: {
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src')
+      }
     }
   }
 }
