@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 import { useEventStore } from '@/stores/events';
 import FamilyTabs from '@/components/FamilyTabs.vue';
 import ScheduleView from '@/components/ScheduleView.vue';
@@ -58,6 +58,16 @@ export default {
     onUnmounted(() => {
       disconnectWebSocket();
     });
+
+    // 监听 eventStore.events 的变化
+    watch(() => eventStore.events, () => {
+      console.log('Events updated:', eventStore.events.length);
+    }, { deep: true });
+
+    // 监听 eventStore.filteredEvents 的变化
+    watch(() => eventStore.filteredEvents, () => {
+      console.log('Filtered events updated:', eventStore.filteredEvents.length);
+    }, { deep: true });
 
     return {
       eventStore,

@@ -4,7 +4,7 @@ import axios from 'axios'
 export const useEventStore = defineStore('events', {
   state: () => ({
     events: [],
-    selectedDate: null,
+    selectedDate: new Date(), // 默认为当前日期
     searchQuery: '',
     familyMembers: [
       { id: 'dad', name: '爸爸', avatar: '/avatars/dad.png', weeklyStars: 0 },
@@ -17,7 +17,11 @@ export const useEventStore = defineStore('events', {
   getters: {
     filteredEvents: (state) => {
       return state.events.filter(event => {
-        const matchesDate = !state.selectedDate || new Date(event.date).toDateString() === state.selectedDate.toDateString();
+        const eventStartDate = new Date(event.startDate);
+        const matchesDate = !state.selectedDate || 
+          (eventStartDate.getFullYear() === state.selectedDate.getFullYear() &&
+           eventStartDate.getMonth() === state.selectedDate.getMonth() &&
+           eventStartDate.getDate() === state.selectedDate.getDate());
         const matchesSearch = !state.searchQuery || event.title.toLowerCase().includes(state.searchQuery.toLowerCase());
         return matchesDate && matchesSearch;
       });
@@ -69,6 +73,10 @@ export const useEventStore = defineStore('events', {
     },
     setSearchQuery(query) {
       this.searchQuery = query;
+    },
+    // 新增方法，用于处理 WebSocket 接收到的事件
+    setEventsFromWebSocket(events) {
+      this.events = events;
     }
   }
 })

@@ -7,7 +7,7 @@
     </div>
     <div class="calendar-grid">
       <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
-      <div v-for="day in calendarDays" :key="day.date" 
+      <div v-for="day in calendarDays" :key="`${currentMonthYear}-${day.date}`" 
            :class="['calendar-day', { 'current-month': day.isCurrentMonth, 'today': day.isToday, 'has-events': day.hasEvents }]"
            @click="selectDate(day)">
         {{ day.date }}
@@ -18,7 +18,8 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, watchEffect } from 'vue'
+import { useEventStore } from '@/stores/events';
 
 export default {
   name: 'MonthlyCalendar',
@@ -29,6 +30,7 @@ export default {
     }
   },
   setup(props, { emit }) {
+    const eventStore = useEventStore();
     const currentDate = ref(new Date())
     const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 
@@ -47,7 +49,7 @@ export default {
       const days = []
       const today = new Date()
 
-      // Add days from previous month
+      // 添加上个月的日期
       for (let i = startingDayOfWeek - 1; i >= 0; i--) {
         const day = new Date(year, month, -i)
         days.push({
@@ -58,7 +60,7 @@ export default {
         })
       }
 
-      // Add days of current month
+      // 添加当前月的日期
       for (let i = 1; i <= daysInMonth; i++) {
         const day = new Date(year, month, i)
         days.push({
@@ -69,7 +71,7 @@ export default {
         })
       }
 
-      // Add days from next month
+      // 添加下个月的日期
       const remainingDays = 42 - days.length
       for (let i = 1; i <= remainingDays; i++) {
         days.push({
@@ -80,7 +82,7 @@ export default {
         })
       }
 
-      // Check for events
+      // 检查事件
       days.forEach(day => {
         day.hasEvents = props.events.some(event => {
           const eventDate = new Date(event.date)
@@ -104,9 +106,14 @@ export default {
     function selectDate(day) {
       if (day.isCurrentMonth) {
         const selectedDate = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth(), day.date)
+        eventStore.setSelectedDate(selectedDate);
         emit('date-selected', selectedDate)
       }
     }
+
+    watchEffect(() => {
+      console.log('Month changed:', currentDate.value.toISOString())
+    })
 
     return {
       currentMonthYear,

@@ -19,7 +19,8 @@ export default function useWebSocket(eventStore) {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'initial') {
-          eventStore.events = data.events;
+          // 使用新的 setEventsFromWebSocket 方法
+          eventStore.setEventsFromWebSocket(data.events);
         } else if (data.type === 'newEvent') {
           eventStore.events.push(data.event);
         } else if (data.type === 'updateEvent') {
@@ -28,6 +29,8 @@ export default function useWebSocket(eventStore) {
             eventStore.events[index] = data.event;
           }
         }
+        // 每次接收到新的事件数据时，更新过滤后的事件列表
+        eventStore.$patch({ events: [...eventStore.events] });
       } catch (error) {
         console.error('处理 WebSocket 消息时出错:', error);
       }
@@ -57,6 +60,8 @@ export default function useWebSocket(eventStore) {
     const poll = async () => {
       try {
         await eventStore.fetchEvents();
+        // 确保在轮询获取事件后更新过滤后的事件列表
+        eventStore.$patch({ events: [...eventStore.events] });
       } catch (error) {
         console.error('轮询错误:', error);
       }

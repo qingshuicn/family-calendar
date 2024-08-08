@@ -172,16 +172,24 @@ app.put('/api/events/:id/complete', async (req, res) => {
   const { completed } = req.body;
 
   try {
+    if (!db) {
+      throw new Error('数据库连接未初始化');
+    }
+
     const event = await db.collection('events').findOne({ _id: new ObjectId(id) });
     if (!event) {
       return res.status(404).json({ error: '未找到事件' });
     }
 
     // 更新事件状态
-    await db.collection('events').updateOne(
+    const updateResult = await db.collection('events').updateOne(
       { _id: new ObjectId(id) },
       { $set: { completed: completed } }
     );
+
+    if (updateResult.modifiedCount === 0) {
+      throw new Error('事件更新失败');
+    }
 
     let updatedStars = null;
     if (completed) {
@@ -195,22 +203,17 @@ app.put('/api/events/:id/complete', async (req, res) => {
         },
         { upsert: true, returnDocument: 'after' }
       );
-      updatedStars = updateStarResult.value.stars;
+      
+      // 添加检查以确保 updateStarResult 和 updateStarResult.value 存在
+      if (updateStarResult && updateStarResult.value) {
+        updatedStars = updateStarResult.value.stars;
+      } else {
+        console.warn('无法获取更新后的星星数');
+      }
     }
 
     // 获取更新后的事件
     const updatedEvent = await db.collection('events').findOne({ _id: new ObjectId(id) });
-
-    // 广播事件更新给所有 WebSocket 客户端
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ 
-          type: 'updateEvent', 
-          event: updatedEvent,
-          updatedStars: updatedStars
-        }));
-      }
-    });
 
     res.json({ 
       message: '事件状态已更新', 
@@ -219,7 +222,7 @@ app.put('/api/events/:id/complete', async (req, res) => {
     });
   } catch (error) {
     console.error('更新事件完成状态时出错:', error);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ error: '服务器内部错误', details: error.message });
   }
 });
 

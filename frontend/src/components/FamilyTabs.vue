@@ -24,51 +24,36 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref } from 'vue'
 import { useEventStore } from '@/stores/events'
 import EventModal from './EventModal.vue'
 
-export default {
-  name: 'FamilyTabs',
-  components: {
-    EventModal
-  },
-  setup() {
-    const eventStore = useEventStore()
-    const selectedMember = ref(null)
-    const showEventModal = ref(false)
+const eventStore = useEventStore()
+const selectedMember = ref(null)
+const showEventModal = ref(false)
 
-    function selectMember(memberId) {
-      selectedMember.value = memberId
-    }
+const emit = defineEmits(['select-member'])
 
-    function openAddEventModal() {
-      showEventModal.value = true
-    }
+function selectMember(memberId) {
+  selectedMember.value = memberId
+  emit('select-member', memberId)
+}
 
-    function closeAddEventModal() {
-      showEventModal.value = false
-    }
+function openAddEventModal() {
+  showEventModal.value = true
+}
 
-    async function submitNewEvent(eventData) {
-      try {
-        await eventStore.addEvent(eventData)
-        closeAddEventModal()
-      } catch (error) {
-        console.error('创建新事件失败:', error)
-      }
-    }
+function closeAddEventModal() {
+  showEventModal.value = false
+}
 
-    return {
-      eventStore,
-      selectedMember,
-      showEventModal,
-      selectMember,
-      openAddEventModal,
-      closeAddEventModal,
-      submitNewEvent
-    }
+async function submitNewEvent(eventData) {
+  try {
+    await eventStore.addEvent(eventData)
+    closeAddEventModal()
+  } catch (error) {
+    console.error('创建新事件失败:', error)
   }
 }
 </script>
