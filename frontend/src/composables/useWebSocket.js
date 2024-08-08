@@ -19,18 +19,11 @@ export default function useWebSocket(eventStore) {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'initial') {
-          // 使用新的 setEventsFromWebSocket 方法
           eventStore.setEventsFromWebSocket(data.events);
         } else if (data.type === 'newEvent') {
-          eventStore.events.push(data.event);
-        } else if (data.type === 'updateEvent') {
-          const index = eventStore.events.findIndex(e => e._id === data.event._id);
-          if (index !== -1) {
-            eventStore.events[index] = data.event;
-          }
+          console.log('收到新事件:', data.event);
+          eventStore.addEventFromWebSocket(data.event);
         }
-        // 每次接收到新的事件数据时，更新过滤后的事件列表
-        eventStore.$patch({ events: [...eventStore.events] });
       } catch (error) {
         console.error('处理 WebSocket 消息时出错:', error);
       }

@@ -14,7 +14,7 @@
         @click="handleItemClick(event)"
       >
         <div class="event-header">
-          <span :class="['event-role', getRoleClass(event.role)]">{{ event.role }}</span>
+          <span :class="['event-role', getRoleClass(event.role)]">{{ getRoleName(event.role) }}</span>
           <span :class="['event-status', { 'completed': event.completed }]">
             {{ event.completed ? '已完成' : '未完成' }}
           </span>
@@ -40,21 +40,41 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useEventStore } from '@/stores/events';
 
-const props = defineProps({
-  selectedMember: {
-    type: String,
-    default: null
-  }
+const eventStore = useEventStore();
+const timeSlots = Array.from({ length: 18 }, (_, i) => i + 6);
+const selectedEvent = ref(null);
+
+const adjustedEvents = computed(() => {
+  console.log('重新计算 adjustedEvents, 过滤前事件数量:', eventStore.events.length);
+  const filtered = eventStore.filteredEvents;
+  console.log('过滤后事件数量:', filtered.length);
+  return filtered.map(event => {
+    const start = new Date(event.startDate);
+    let end = new Date(event.endDate);
+    
+    if (end.getHours() >= 23 && end.getMinutes() > 0) {
+      end = new Date(end.setHours(23, 0, 0, 0));
+    }
+    
+    return { ...event, adjustedEndDate: end, adjustedStartDate: start, id: event._id };
+  }).filter(event => {
+    const startHour = new Date(event.adjustedStartDate).getHours();
+    return startHour >= 6 && startHour < 23;
+  });
 });
 
-const eventStore = useEventStore();
-const selectedEvent = ref(null);
-const timeSlots = Array.from({ length: 18 }, (_, i) => i + 6);
+watch(() => eventStore.events, (newEvents) => {
+  console.log('事件列表已更新，新的事件数量:', newEvents.length);
+  // 强制重新计算 adjustedEvents
+  adjustedEvents.value;
+}, { deep: true, immediate: true });
 
-console.log('ScheduleView setup executed');
+watch(() => eventStore.selectedMember, (newValue) => {
+  console.log('Selected member changed in ScheduleView:', newValue);
+});
 
 const getEventStyle = (event) => {
   const start = new Date(event.startDate);
@@ -78,17 +98,14 @@ const getEventStyle = (event) => {
   };
 };
 
-const getRoleClass = (role) => {
-  const roleMap = {
-    '爸爸': 'role-dad',
-    '妈妈': 'role-mom',
-    '哥哥': 'role-brother',
-    '姐姐': 'role-sister',
-    '弟弟': 'role-little-brother',
-    '妹妹': 'role-little-sister',
-    '阿姨': 'role-aunt'
-  };
-  return roleMap[role] || 'role-default';
+const getRoleClass = (roleName) => {
+  const role = eventStore.familyMembers.find(member => member.name === roleName);
+  if (!role) return 'role-default';
+  return `role-${roleName.toLowerCase().replace(/\s+/g, '-')}`;
+};
+
+const getRoleName = (roleName) => {
+  return roleName || '未知角色';
 };
 
 const formatEventTime = (event) => {
@@ -96,29 +113,6 @@ const formatEventTime = (event) => {
   const end = new Date(event.endDate);
   return `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
 };
-
-const adjustedEvents = computed(() => {
-  let events = eventStore.filteredEvents;
-  
-  // 如果选择了特定成员，则进行筛选
-  if (props.selectedMember) {
-    events = events.filter(event => event.role === props.selectedMember);
-  }
-
-  return events.map(event => {
-    const start = new Date(event.startDate);
-    let end = new Date(event.endDate);
-    
-    if (end.getHours() >= 23 && end.getMinutes() > 0) {
-      end = new Date(end.setHours(23, 0, 0, 0));
-    }
-    
-    return { ...event, adjustedEndDate: end, adjustedStartDate: start, id: event._id };
-  }).filter(event => {
-    const startHour = new Date(event.adjustedStartDate).getHours();
-    return startHour >= 6 && startHour < 23;
-  });
-});
 
 const formatHour = (hour) => `${hour.toString().padStart(2, '0')}:00`;
 
@@ -150,9 +144,15 @@ const completeEvent = async (isCompleted) => {
     }
   }
 };
+
+watch(() => eventStore.familyMembers, () => {
+  console.log('Family members updated in ScheduleView');
+}, { deep: true });
+
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .schedule-view {
   display: flex;
   height: 100%;
@@ -187,6 +187,24 @@ const completeEvent = async (isCompleted) => {
   height: 100%;
 }
 
+.events-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    repeating-linear-gradient(
+      to bottom,
+      #e0e0e0 0,
+      #e0e0e0 1px,
+      transparent 1px,
+      transparent calc(100% / 17)
+    );
+  pointer-events: none;
+}
+
 .event-item {
   background-color: #ffffff;
   border-radius: 4px;
@@ -213,6 +231,8 @@ const completeEvent = async (isCompleted) => {
   font-weight: bold;
   padding: 2px 6px;
   border-radius: 3px;
+  background-color: #7ed321;
+  color: white;
 }
 
 .event-status {
@@ -294,13 +314,8 @@ const completeEvent = async (isCompleted) => {
   color: white;
 }
 
-/* 角色特定颜色 */
-.role-dad { background-color: #4a90e2; color: white; }
-.role-mom { background-color: #50e3c2; color: white; }
-.role-brother { background-color: #f5a623; color: white; }
-.role-sister { background-color: #b8e986; color: black; }
-.role-little-brother { background-color: #bd10e0; color: white; }
-.role-little-sister { background-color: #e2495f; color: white; }
-.role-aunt { background-color: #9013fe; color: white; }
-.role-default { background-color: #7ed321; color: white; }
+.role-爸爸 { background-color: #4a90e2; color: white; }
+.role-妈妈 { background-color: #50e3c2; color: white; }
+.role-哥哥 { background-color: #f5a623; color: white; }
+.role-弟弟 { background-color: #b8e986; color: black; }
 </style>

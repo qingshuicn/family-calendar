@@ -12,21 +12,31 @@
           @search="handleSearch"
         />
         <FamilyTabs />
+        <button @click="showRoleManagement = true" class="manage-roles-btn">管理角色</button>
       </div>
       <div class="main-content">
         <ScheduleView :events="eventStore.filteredEvents" />
+      </div>
+    </div>
+    
+    <!-- 角色管理模态框 -->
+    <div v-if="showRoleManagement" class="modal">
+      <div class="modal-content">
+        <button @click="showRoleManagement = false" class="close-btn">&times;</button>
+        <RoleManagement />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useEventStore } from '@/stores/events';
 import FamilyTabs from '@/components/FamilyTabs.vue';
 import ScheduleView from '@/components/ScheduleView.vue';
 import CurrentDateTime from '@/components/CurrentDateTime.vue';
 import MonthlyCalendar from '@/components/MonthlyCalendar.vue';
+import RoleManagement from '@/components/RoleManagement.vue';
 import useWebSocket from '../composables/useWebSocket';
 
 export default {
@@ -35,11 +45,13 @@ export default {
     FamilyTabs,
     ScheduleView,
     CurrentDateTime,
-    MonthlyCalendar
+    MonthlyCalendar,
+    RoleManagement
   },
   setup() {
     const eventStore = useEventStore();
     const { connectWebSocket, disconnectWebSocket } = useWebSocket(eventStore);
+    const showRoleManagement = ref(false);
 
     function handleDateSelected(date) {
       eventStore.setSelectedDate(date);
@@ -49,9 +61,11 @@ export default {
       eventStore.setSearchQuery(query);
     }
 
-    onMounted(() => {
-      eventStore.fetchEvents();
-      eventStore.fetchWeeklyStars();
+    onMounted(async () => {
+      await eventStore.fetchFamilyMembers();
+      await eventStore.fetchEvents();
+      await eventStore.fetchWeeklyStars();
+      eventStore.setSelectedDate(new Date()); // 设置默认日期为今天
       connectWebSocket();
     });
 
@@ -73,6 +87,7 @@ export default {
       eventStore,
       handleDateSelected,
       handleSearch,
+      showRoleManagement
     };
   }
 };
