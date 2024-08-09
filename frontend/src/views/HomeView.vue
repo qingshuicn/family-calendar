@@ -11,11 +11,10 @@
           @date-selected="handleDateSelected"
           @search="handleSearch"
         />
-        <FamilyTabs />
-        <button @click="showRoleManagement = true" class="manage-roles-btn">管理角色</button>
+        <FamilyTabs @open-role-management="showRoleManagement = true" />
       </div>
       <div class="main-content">
-        <ScheduleView :events="eventStore.filteredEvents" />
+        <EventBlockView />
       </div>
     </div>
     
@@ -33,7 +32,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useEventStore } from '@/stores/events';
 import FamilyTabs from '@/components/FamilyTabs.vue';
-import ScheduleView from '@/components/ScheduleView.vue';
+import EventBlockView from '@/components/EventBlockView.vue';
 import CurrentDateTime from '@/components/CurrentDateTime.vue';
 import MonthlyCalendar from '@/components/MonthlyCalendar.vue';
 import RoleManagement from '@/components/RoleManagement.vue';
@@ -43,7 +42,7 @@ export default {
   name: 'HomeView',
   components: {
     FamilyTabs,
-    ScheduleView,
+    EventBlockView,
     CurrentDateTime,
     MonthlyCalendar,
     RoleManagement
@@ -65,7 +64,7 @@ export default {
       await eventStore.fetchFamilyMembers();
       await eventStore.fetchEvents();
       await eventStore.fetchWeeklyStars();
-      eventStore.setSelectedDate(new Date()); // 设置默认日期为今天
+      eventStore.setSelectedDate(new Date());
       connectWebSocket();
     });
 
@@ -73,12 +72,10 @@ export default {
       disconnectWebSocket();
     });
 
-    // 监听 eventStore.events 的变化
     watch(() => eventStore.events, () => {
       console.log('Events updated:', eventStore.events.length);
     }, { deep: true });
 
-    // 监听 eventStore.filteredEvents 的变化
     watch(() => eventStore.filteredEvents, () => {
       console.log('Filtered events updated:', eventStore.filteredEvents.length);
     }, { deep: true });

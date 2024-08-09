@@ -1,21 +1,27 @@
-<!-- FamilyTabs.vue -->
 <template>
   <div class="family-tabs">
-    <div 
-      v-for="member in sortedFamilyMembers" 
-      :key="member.id"
-      :class="['member-tab', { active: member.name === eventStore.selectedMember }]"
-      @click="selectMember(member.name)"
-    >
-      <img :src="member.avatar || defaultAvatar" :alt="member.name" class="member-avatar">
-      <div class="member-info">
-        <span class="member-name">{{ member.name }}</span>
-        <div class="achievement-icons">
+    <div class="member-list">
+      <div 
+        v-for="member in sortedFamilyMembers" 
+        :key="member.id"
+        :class="['member-tab', { active: member.name === eventStore.selectedMember }]"
+        @click="selectMember(member.name)"
+        :style="{ backgroundColor: member.color, borderColor: member.borderColor }"
+      >
+        <div class="avatar-container">
+          <img v-if="member.avatar" :src="member.avatar" :alt="member.name" class="member-avatar">
+          <div v-else class="avatar-placeholder"></div>
+        </div>
+        <div class="member-info">
+          <span class="member-name">{{ member.name }}</span>
           <span class="star">⭐ {{ member.weeklyStars }}</span>
         </div>
       </div>
     </div>
-    <button class="add-event-btn" @click="openAddEventModal">添加日程</button>
+    <div class="action-buttons">
+      <button @click="openAddEventModal" class="add-event-btn">添加日程</button>
+      <button @click="$emit('open-role-management')" class="manage-roles-btn">管理角色</button>
+    </div>
     <EventModal 
       v-if="showEventModal"
       :selectedMember="eventStore.selectedMember"
@@ -33,8 +39,6 @@ import EventModal from './EventModal.vue'
 const eventStore = useEventStore()
 const showEventModal = ref(false)
 let resetTimer = null
-
-const defaultAvatar = '/path/to/default-avatar.png' // 设置一个默认头像路径
 
 const sortedFamilyMembers = computed(() => {
   return [...eventStore.familyMembers].sort((a, b) => {
@@ -89,4 +93,84 @@ onUnmounted(() => {
 })
 </script>
 
-<style src="./FamilyTabs.css" scoped></style>
+<style scoped>
+.family-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.member-tab {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-left: 4px solid;
+}
+
+.member-tab.active {
+  filter: brightness(90%);
+}
+
+.avatar-container {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
+
+.member-avatar, .avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.member-name {
+  font-weight: bold;
+}
+
+.star {
+  font-size: 12px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.add-event-btn, .manage-roles-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  background-color: #4a0e4e; /* 统一使用深紫色背景 */
+  color: white; /* 统一使用白色文字 */
+}
+
+.add-event-btn:hover, .manage-roles-btn:hover {
+  filter: brightness(110%); /* 统一的悬停效果 */
+}
+</style>
